@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>JIRA统计</title>
+    <style>
+        .jira-table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        .jira-table td {
+            border: 1px solid #CCC;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 3px 5px;
+        }
+    </style>
+</head>
+
+<body>
+</body>
+<script src="../js/plugin/jquery.min.js"></script>
+<script>
+    function formatCellJira(person, type, row, detail) {
+        var jira = person[type];
+        if (!jira) {
+            row.push(undefined, undefined, undefined);
+        } else {
+            row.push(' ' + jira.total, ' ' + jira.score);
+            detail[type] = jira;
+            if (jira.names) {
+                row.push(jira.jira.toString());
+            } else {
+                var info = [],
+                    idx = 0;
+                for (var name in jira) {
+                    if (['total', 'score'].indexOf(name) !== -1) continue;
+                    var jiraInfo = jira[name];
+                    info.push((++idx) + '. ' + name + ' （数量：' + jiraInfo.total + ', 得分：' + jiraInfo.score + '）');
+                }
+                row.push(info.join('<br>'));
+            }
+        }
+    }
+
+    function getTypeNames(jiras) {
+        var typeNames = [];
+        for (var person in jiras) {
+            var jira = jiras[person];
+            for (var name in jira) {
+                if (!/[a-z]+/.test(name) && typeNames.indexOf(name) === -1) {
+                    typeNames.push(name);
+                }
+            }
+        }
+        return typeNames;
+    }
+
+    function orderPush(list, cmp, idx, from) {
+        var total = cmp[idx];
+        for (var i = from, len = list.length; i < len; i++) {
+            if (list[i][idx] <= total) {
+                list.splice(i, 0, cmp);
+                return;
+            }
+        }
+        list.push(cmp);
+    }
+
+    function formatPrint(jiras) {
+        var typeNames = getTypeNames(jiras);
+        var table = [
+                ['序号', '姓名', '总BUG数', '总得分'],
+                [undefined, undefined, undefined, undefined]
+            ],
+            idx = 1;
+        typeNames.every(function(item) {
+            table[0].push(item, undefined, undefined);
+            table[1].push('BUG数', '分数', '详情');
+            return true;
+        });
+        for (var name in jiras) {
+            var person = jiras[name],
+                detail = {},
+                row = [undefined, name, person.total, person.score];
+            for (var i = 0, len = typeNames.length; i < len; i++) {
+                formatCellJira(person, typeNames[i], row, detail);
+            }
+            orderPush(table, row, 2, 2);
+        }
+        for (var i = 2, len = table.length; i < len; i++) {
+            table[i][0] = idx++;
+        }
+        var count = table.length;
+        table.push(['合计', undefined, '=SUM(C2:C' + count + ')', '=SUM(D2:D' + count + ')']);
+        typeNames.every(function(item, idx) {
+            var charBug = String.fromCharCode(69 + idx * 3)
+            var charScore = String.fromCharCode(69 + idx * 3 + 1)
+            table[count].push('=SUM(' + charBug + '2:' + charBug + count + ')', '=SUM(' + charScore + '2:' + charScore + count + ')', undefined);
+            return true;
+        });
+        return table;
+    }
+    $.ajax({
+        url: '/jira',
+        method: 'GET',
+        success: function(data) {
+            try {
+                data = JSON.parse(data);
+                console.log(data);
+                var fmDatas = formatPrint(data);
+                var htmls = ['<table class="jira-table">'];
+                for (var r = 0, rlen = fmDatas.length; r < rlen; r++) {
+                    htmls.push('<tr>');
+                    var rowData = fmDatas[r];
+                    for (var c = 0, clen = rowData.length; c < clen; c++) {
+                        htmls.push(/^1\./.test(rowData[c]) ? '<td style="text-align: left; white-space: nowrap">' : '<td>', rowData[c] || '', '</td>');
+                    }
+                    htmls.push('</tr>');
+                }
+                htmls.push('</table>');
+                document.body.innerHTML = htmls.join('');
+            } catch (e) {
+                document.body.innerHTML = data;
+            }
+        }
+    });
+</script>
+
+</html>
