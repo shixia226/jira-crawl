@@ -135,13 +135,15 @@ function hanlePerson(name, person, jiras) {
                     var helper = texts[i].substr(0, match.index).match(/([^\*]+)\*{3}[^\*]*$/);
                     if (helper) {
                         var helpPerson = jiras[helper[1]];
-                        helpPerson.score = (helpPerson.score || 0) + score / 2;
-                        var helpInfo = helpPerson[KEE_HELP];
-                        if (!helpInfo) helpInfo = helpPerson[KEE_HELP] = { score: 0, total: 0, jira: [], names: [] }
-                        helpInfo.score += Math.abs(score / 2);
-                        helpInfo.total++;
-                        helpInfo.jira.push(jira);
-                        helpInfo.names.push(name);
+                        if (helpPerson) {
+                            helpPerson.score = (helpPerson.score || 0) + score / 2;
+                            var helpInfo = helpPerson[KEE_HELP];
+                            if (!helpInfo) helpInfo = helpPerson[KEE_HELP] = { score: 0, total: 0, jira: [], names: [] }
+                            helpInfo.score += Math.abs(score / 2);
+                            helpInfo.total++;
+                            helpInfo.jira.push(jira);
+                            helpInfo.names.push(name);
+                        }
                     }
                 }
             }

@@ -11,11 +11,31 @@
         }
         
         .jira-table td {
-            border: 1px solid #CCC;
+            border: 1px solid #999;
             text-align: center;
             vertical-align: middle;
             white-space: nowrap;
             padding: 3px 5px;
+            font-size: 12px;
+            background: #FFF;
+        }
+        
+        .jira-table .data .highlight {
+            color: red;
+        }
+        
+        .jira-table .data .detail {
+            color: #777;
+            text-align: left;
+            white-space: nowrap;
+        }
+        
+        .jira-table .header td {
+            background: #DEDEDE;
+        }
+        
+        .jira-table .footer td {
+            background: #CCC;
         }
     </style>
 </head>
@@ -24,12 +44,19 @@
 </body>
 <script src="../js/plugin/jquery.min.js"></script>
 <script>
+    function getQueryParam(name) {
+        var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
+        var r = window.location.search.substr(1).match(reg);
+        if (r !== null) return unescape(r[2]);
+        return '';
+    }
+
     function formatCellJira(person, type, row, detail) {
         var jira = person[type];
         if (!jira) {
-            row.push(undefined, undefined, undefined);
+            row.push('', '');
         } else {
-            row.push(' ' + jira.total, ' ' + jira.score);
+            row.push(' ' + jira.total /*, ' ' + jira.score*/ );
             detail[type] = jira;
             if (jira.names) {
                 row.push(jira.jira.toString());
@@ -39,7 +66,7 @@
                 for (var name in jira) {
                     if (['total', 'score'].indexOf(name) !== -1) continue;
                     var jiraInfo = jira[name];
-                    info.push((++idx) + '. ' + name + ' （数量：' + jiraInfo.total + ', 得分：' + jiraInfo.score + '）');
+                    info.push((++idx) + '. ' + name + ' （数量：' + jiraInfo.total /* + ', 得分：' + jiraInfo.score*/ + '）');
                 }
                 row.push(info.join('<br>'));
             }
@@ -47,6 +74,7 @@
     }
 
     function getTypeNames(jiras) {
+        return ['当前版本开发新增', '之前版本开发新增', '维护模块历史遗留'];
         var typeNames = [];
         for (var person in jiras) {
             var jira = jiras[person];
@@ -70,22 +98,42 @@
         list.push(cmp);
     }
 
+    function sumColumn(datas, col, fr) {
+        var sum = 0;
+        for (var r = fr, rlen = datas.length - 1; r < rlen; r++) {
+            sum += (parseInt(datas[r][col]) || 0)
+        }
+        return sum;
+    }
+
     function formatPrint(jiras) {
         var typeNames = getTypeNames(jiras);
         var table = [
-                ['序号', '姓名', '总BUG数', '总得分'],
-                [undefined, undefined, undefined, undefined]
+                [{
+                    value: '序号',
+                    rs: 2
+                }, {
+                    value: '姓名',
+                    rs: 2
+                }, {
+                    value: '总BUG数',
+                    rs: 2
+                } /*, '总得分'*/ ],
+                [undefined, undefined, undefined /*, undefined*/ ]
             ],
             idx = 1;
         typeNames.every(function(item) {
-            table[0].push(item, undefined, undefined);
-            table[1].push('BUG数', '分数', '详情');
+            table[0].push({
+                value: item,
+                cs: 2
+            } /*, undefined*/ , undefined);
+            table[1].push('BUG数' /*, '分数'*/ , '详情');
             return true;
         });
         for (var name in jiras) {
             var person = jiras[name],
                 detail = {},
-                row = [undefined, name, person.total, person.score];
+                row = [undefined, name, person.total /*, person.score*/ ];
             for (var i = 0, len = typeNames.length; i < len; i++) {
                 formatCellJira(person, typeNames[i], row, detail);
             }
@@ -95,29 +143,53 @@
             table[i][0] = idx++;
         }
         var count = table.length;
-        table.push(['合计', undefined, '=SUM(C2:C' + count + ')', '=SUM(D2:D' + count + ')']);
+        table.push([{
+            value: '合计',
+            cs: 2
+        }, undefined, sumColumn(table, 2, 2) /*, '=SUM(D2:D' + count + ')'*/ ]);
         typeNames.every(function(item, idx) {
-            var charBug = String.fromCharCode(69 + idx * 3)
-            var charScore = String.fromCharCode(69 + idx * 3 + 1)
-            table[count].push('=SUM(' + charBug + '2:' + charBug + count + ')', '=SUM(' + charScore + '2:' + charScore + count + ')', undefined);
+            table[count].push(sumColumn(table, 3 + idx * 2, 2), '');
             return true;
         });
         return table;
     }
+    var timer = 0,
+        count = 3;
+    (function _() {
+        document.body.innerHTML = '<h4 style="width: 280px; margin: 0 auto; margin-top: 100px; ">可能会比较耗时，正在玩命加载中 ' + new Array(count + 1).join('. ') + '</h4>';
+        count = count % 3 + 1;
+        timer = setTimeout(_, 500);
+    })()
     $.ajax({
         url: '/jira',
+        data: 'version=' + getQueryParam('version'),
         method: 'GET',
         success: function(data) {
+            clearTimeout(timer);
             try {
                 data = JSON.parse(data);
                 console.log(data);
                 var fmDatas = formatPrint(data);
-                var htmls = ['<table class="jira-table">'];
+                var htmls = ['<h3 style="text-align: center;">版本【', getQueryParam('version') || 'Site V1.9.0', '】BUG情况汇总</h3>', '<table class="jira-table">'];
                 for (var r = 0, rlen = fmDatas.length; r < rlen; r++) {
-                    htmls.push('<tr>');
+                    htmls.push('<tr class="', r < 2 ? 'header' : r === rlen - 1 ? 'footer' : 'data', '">');
                     var rowData = fmDatas[r];
                     for (var c = 0, clen = rowData.length; c < clen; c++) {
-                        htmls.push(/^1\./.test(rowData[c]) ? '<td style="text-align: left; white-space: nowrap">' : '<td>', rowData[c] || '', '</td>');
+                        var data = rowData[c];
+                        if (data === undefined) continue;
+                        htmls.push('<td');
+                        if (data && data.rs) {
+                            htmls.push(' rowSpan="', data.rs, '"');
+                        }
+                        if (data && data.cs) {
+                            htmls.push(' colSpan="', data.cs, '"');
+                        }
+                        if (/^1\./.test(data)) {
+                            htmls.push(' class="detail"');
+                        } else if (c === 2) {
+                            htmls.push(' class="highlight"');
+                        }
+                        htmls.push('>', data.value || data, '</td>');
                     }
                     htmls.push('</tr>');
                 }
@@ -125,6 +197,7 @@
                 document.body.innerHTML = htmls.join('');
             } catch (e) {
                 document.body.innerHTML = data;
+                console.log(e);
             }
         }
     });
