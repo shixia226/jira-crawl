@@ -19,9 +19,10 @@ function resolveJiraPage(datas, finish, jiras) {
     jiraPage.onConsoleMessage = function(msg) {
         console.log(msg);
     }
-    jiraPage.open('http://qa.d.xiaonei.com' + url, function(status) {
+    jiraPage.open(jiraConfig.url + url, function(status) {
         if (status === 'success') {
             var jira = url.substr(url.lastIndexOf('/') + 1);
+            console.log('序号：' + datas.length + '  ' + jira);
             var text = jiraPage.evaluate(function(jira) {
                 var elems = document.querySelectorAll('#issue_actions_container .action-details > a, #issue_actions_container .action-body'),
                     texts = [];
@@ -52,22 +53,13 @@ function mergeParam(param) {
     return url.join('&');
 }
 
-function resolveJiraList(callback, condition) {
-    condition = condition || {};
-    var url = condition.url || (jiraConfig.url + '/jira/secure/IssueNavigator!executeAdvanced.jspa');
-    var param = mergeParam({
-        os_username: condition.username || jiraConfig.username,
-        os_password: condition.password || jiraConfig.password,
-        jqlQuery: condition.query || jiraConfig.query.replace(/\${version}/g, condition.version || 'Site V1.9.0'),
-        runQuery: true,
-        clear: true
-    });
-    url = url + (url.indexOf('?') === -1 ? '?' : url.charAt(url.length - 1) === '?' ? '' : '&') + param;
+function resolveJiraListInPage(url, datas, callback) {
     var listPage = require('webpage').create();
     listPage.open(url, function(status) {
         if (status === 'success') {
             try {
-                var datas = listPage.evaluate(function() {
+                console.log('抓取列表...\r\n ### ' + url);
+                var info = listPage.evaluate(function() {
                     var datas = [];
                     var rows = document.querySelectorAll('#issuetable tbody tr');
                     for (var i = 0, len = rows.length; i < len; i++) {
@@ -77,10 +69,21 @@ function resolveJiraList(callback, condition) {
                             url: row.querySelector('td.issuekey > a').getAttribute('href')
                         });
                     }
-                    return datas;
+                    var next = document.querySelector('.pagination .icon-next');
+                    return {
+                        datas: datas,
+                        next: next && next.getAttribute('href')
+                    };
                 });
                 listPage.close();
-                resolveJiraPage(datas, callback, {});
+                datas = datas.concat(info.datas);
+                if (info.next) {
+                    resolveJiraListInPage(jiraConfig.url + info.next, datas, callback);
+                } else {
+                    console.log('开始抓取详细信息...');
+                    console.log('总共JIRA数：' + datas.length);
+                    resolveJiraPage(datas, callback, {});
+                }
             } catch (e) {
                 callback('Error:' + e);
             }
@@ -88,6 +91,22 @@ function resolveJiraList(callback, condition) {
             callback('Error in load JIRA list.');
         }
     })
+}
+
+function resolveJiraList(callback, condition) {
+    console.log('开始抓取...');
+    condition = condition || {};
+    var url = condition.url || (jiraConfig.url + '/jira/secure/IssueNavigator!executeAdvanced.jspa'),
+        version = (condition.version || 'Site V1.9.0').split(';');
+    var param = mergeParam({
+        os_username: condition.username || jiraConfig.username,
+        os_password: condition.password || jiraConfig.password,
+        jqlQuery: condition.query || jiraConfig.query.replace(/\${version}/g, version.join('", "')),
+        runQuery: true,
+        clear: true
+    });
+    url = url + (url.indexOf('?') === -1 ? '?' : url.charAt(url.length - 1) === '?' ? '' : '&') + param;
+    resolveJiraListInPage(url, [], callback);
 }
 
 function matchObject(arr, value, name) {

@@ -2,5 +2,5 @@
     "url": "http://qa.d.xiaonei.com",
     "username": "feng.chen",
     "password": "123456",
-    "query": "project=CFW AND assignee in (\"weizeng.shu\",\"ting.sun5\",\"hao.li3\",\"chunyan.wen\",\"zongqin.zhang\",\"hengshuai.hu\",\"zhuo.zhang3\",\"zhenmin.tian\",\"biao.wang\",\"hu.tang3\") AND resolution in (Fixed, Postponed, Unresolved) AND affectedVersion=\"${version}\""
+    "query": "project=CFW AND assignee in (\"weizeng.shu\",\"ting.sun5\",\"hao.li3\",\"chunyan.wen\",\"zongqin.zhang\",\"hengshuai.hu\",\"zhuo.zhang3\",\"zhenmin.tian\",\"biao.wang\",\"hu.tang3\") AND resolution in (Fixed, Postponed, Unresolved) AND affectedVersion in (\"${version}\")"
 }

@@ -14,10 +14,12 @@ app.get('/jira', function(req, res) {
 
     var output = [];
     phantom.stdout.on('data', (data) => {
+        console.log('' + data)
         output.push(data);
     });
 
     phantom.stderr.on('data', (data) => {
+        console.log('Error: ' + data);
         output.push(data);
     });
 
