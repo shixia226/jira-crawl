@@ -58,7 +58,7 @@ function resolveJiraListInPage(url, datas, callback) {
     listPage.open(url, function(status) {
         if (status === 'success') {
             try {
-                console.log('抓取列表...\r\n ### ' + url);
+                console.log('进入JIRA列表页...\r\n ### ' + url);
                 var info = listPage.evaluate(function() {
                     var datas = [];
                     var rows = document.querySelectorAll('#issuetable tbody tr');
@@ -88,7 +88,7 @@ function resolveJiraListInPage(url, datas, callback) {
                 callback('Error:' + e);
             }
         } else {
-            callback('Error in load JIRA list.');
+            callback('Error in load JIRA list. [' + status + ']');
         }
     })
 }
@@ -96,7 +96,7 @@ function resolveJiraListInPage(url, datas, callback) {
 function resolveJiraList(callback, condition) {
     console.log('开始抓取...');
     condition = condition || {};
-    var url = condition.url || (jiraConfig.url + '/jira/secure/IssueNavigator!executeAdvanced.jspa'),
+    var url = condition.url || (jiraConfig.url + jiraConfig.detailUrl),
         version = (condition.version || 'Site V1.9.0').split(';');
     var param = mergeParam({
         os_username: condition.username || jiraConfig.username,
@@ -170,20 +170,66 @@ function hanlePerson(name, person, jiras) {
     }
 }
 
-module.exports = function(callback, condition) {
-    resolveJiraList(function(jiras) {
-        if (Object.prototype.toString.call(jiras) === '[object String]') {
-            console.log(jiras);
-        } else {
-            try {
-                for (var name in jiras) {
-                    hanlePerson(name, jiras[name], jiras);
+module.exports = {
+    version: function(callback, condition) {
+        condition = condition || {};
+        console.log('爬取版本号...');
+        var url = condition.url || (jiraConfig.url + jiraConfig.versionUrl);
+        var param = mergeParam({
+            os_username: condition.username || jiraConfig.username,
+            os_password: condition.password || jiraConfig.password
+        });
+        url = url.replace("${verify}", param);
+        var versionPage = require('webpage').create();
+        // versionPage.onConsoleMessage = function(msg) {
+        //     console.log('PAGE CONSOLE: ' + msg);
+        // }
+        versionPage.open(url, function(status) {
+            if (status === 'success') {
+                try {
+                    console.log('进入版本号页面...\r\n ### ' + url);
+                    var datas = versionPage.evaluate(function() {
+                        console.log('进入页面')
+                        var datas = [],
+                            anchors = document.querySelectorAll('#versions_panel a.summary');
+                        console.log(anchors.length);
+                        for (var i = 0, len = anchors.length; i < len; i++) {
+                            datas.push(anchors[i].innerText);
+                        }
+                        console.log(JSON.stringify(datas, null, 4));
+                        return datas;
+                    });
+                    versionPage.close();
+                    var startVersion = jiraConfig.startVersion;
+                    if (startVersion) {
+                        var idx = datas.indexOf(startVersion);
+                        if (idx !== -1) datas = datas.slice(idx);
+                    }
+                    if (callback) callback(datas);
+                } catch (e) {
+                    if (callback) callback('Error:' + e);
                 }
-                if (callback) callback(jiras);
-            } catch (e) {
-                console.log(e);
+            } else {
+                if (callback) callback('Error in load JIRA version.');
             }
-        }
-        phantom.exit();
-    }, condition)
-}
+            phantom.exit();
+        });
+    },
+    detail: function(callback, condition) {
+        resolveJiraList(function(jiras) {
+            if (Object.prototype.toString.call(jiras) === '[object String]') {
+                console.log(jiras);
+            } else {
+                try {
+                    for (var name in jiras) {
+                        hanlePerson(name, jiras[name], jiras);
+                    }
+                    if (callback) callback(jiras);
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+            phantom.exit();
+        }, condition)
+    }
+};

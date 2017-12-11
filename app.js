@@ -6,11 +6,32 @@ var Url = require("url");
 
 app.get('/config', function(req, res) {
     var query = Url.parse(req.url, true).query;
-})
+});
 
-app.get('/jira', function(req, res) {
+app.get('/version', function(req, res) {
+    var phantom = require('child_process').spawn('phantomjs', ['./server/version-jira.js']);
+
+    var output = [];
+    phantom.stdout.on('data', (data) => {
+        console.log('' + data)
+        output.push(data);
+    });
+
+    phantom.stderr.on('data', (data) => {
+        console.log('Error: ' + data);
+        output.push(data);
+    });
+
+    phantom.on('close', (code) => {
+        var data = output.join(''),
+            idx = data.indexOf('===');
+        res.end((idx === -1 ? data : data.substr(idx + 3)) || 'Error');
+    });
+});
+
+app.get('/detail', function(req, res) {
     var query = Url.parse(req.url, true).query;
-    var phantom = require('child_process').spawn('phantomjs', ['./server/process-jira.js', query.version || '', query.query || '']);
+    var phantom = require('child_process').spawn('phantomjs', ['./server/detail-jira.js', query.version || '', query.query || '']);
 
     var output = [];
     phantom.stdout.on('data', (data) => {

@@ -34,6 +34,11 @@ module.exports = {
         desc: '包括网络不畅，服务器崩溃，代码部署冲突',
         kee: 'E',
         score: 1
+    }, {
+        name: '同源问题',
+        desc: '同一处代码问题导致不同地方出现问题；类似功能代码因历史原因未抽取而互相复制不同地方出问题',
+        kee: 'R',
+        score: 1
     }],
     TYPE_UNKNOWN: {
         name: '未知类型',

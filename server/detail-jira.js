@@ -68,7 +68,7 @@ var idx = 1,
     format = system.args[1] === '-f';
 if (format) idx++;
 
-require('./crawl-jira.js')(function(jiras) {
+require('./crawl-jira.js').detail(function(jiras) {
     if (format) {
         console.log('\r\n########################\r\nJIRA统计结果：\r\n');
         formatPrint(jiras);
