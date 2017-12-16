@@ -7,7 +7,7 @@ function showError(msg, selector) {
     clearTimeout(g_timer);
     $('.error').remove();
     $(selector + ' label').after('<p class="error">' + msg + '</p>');
-    g_timer = setTimeout(function () {
+    g_timer = setTimeout(function() {
         $('.error').remove();
     }, 3000);
 }
@@ -15,7 +15,7 @@ function showError(msg, selector) {
 function queryHistory() {
     $.ajax({
         url: '/history',
-        success: function (datas) {
+        success: function(datas) {
             g_history = JSON.parse(datas);
             var html = ['<label>历史结果：</label><ul>'];
             for (var i = g_history.length - 1; i >= 0; i--) {
@@ -30,14 +30,14 @@ function queryHistory() {
 function saveHistory() {
     $.ajax({
         url: '/save',
-        success: function () {
+        success: function() {
 
         }
     });
 }
 
 function clearHistory() {
-    $.ajax('/clear', function () {
+    $.ajax('/clear', function() {
 
     });
 }
@@ -91,7 +91,7 @@ function orderPush(list, cmp, idx, from) {
 
 function sumColumn(datas, col, fr) {
     var sum = 0;
-    for (var r = fr, rlen = datas.length - 1; r < rlen; r++) {
+    for (var r = fr, rlen = datas.length; r < rlen; r++) {
         sum += (parseInt(datas[r][col]) || 0)
     }
     return sum;
@@ -101,8 +101,10 @@ function parseBasic(basic) {
     var str = basic.split(';'),
         json = {};
     for (var i = 0, len = str.length; i < len; i++) {
-        var person = str[i].split(':');
-        json[person[0]] = parseInt(person[1]) || 0;
+        if (str[i]) {
+            var person = str[i].split(':');
+            json[person[0]] = parseInt(person[1]) || 0;
+        }
     }
     return json;
 }
@@ -131,7 +133,7 @@ function formatPrint(jiras, basic) {
             [undefined, undefined, undefined]
         ],
         idx = 1;
-    typeNames.every(function (item) {
+    typeNames.every(function(item) {
         table[0].push({
             value: item,
             cs: 2
@@ -162,7 +164,7 @@ function formatPrint(jiras, basic) {
     }
     for (var person in basic) {
         var row = [undefined, person, 0];
-        typeNames.every(function (item) {
+        typeNames.every(function(item) {
             row.push(0, '');
             return true;
         });
@@ -173,12 +175,11 @@ function formatPrint(jiras, basic) {
     for (var i = 2, len = table.length; i < len; i++) {
         table[i][0] = idx++;
     }
-    var count = table.length,
-        lastRow = [{
+    var lastRow = [{
             value: '合计',
             cs: 2
         }, undefined, sumColumn(table, 2, 2)];
-    typeNames.every(function (item, idx) {
+    typeNames.every(function(item, idx) {
         lastRow.push(sumColumn(table, 3 + idx * 2, 2), '');
         return true;
     });
@@ -224,14 +225,12 @@ function successOnQueryVersion(datas) {
     for (var i = datas.length - 1; i >= 0; i--) {
         html.push('<li>', datas[i], '</li>');
     }
-    html.push('</ul>');
+    html.push('</ul><input>');
     $('.version').html(html.join(''));
     $('.ctrl').show();
 }
 
 function queryVersion() {
-    successOnQueryVersion(JSON.stringify(["Site V1.9.0", "Site V1.9.2", "CMS2.0.4", "Site V1.9.1", "CMS2.0.3.1"]));
-    return;
     $.ajax({
         url: '/version',
         success: successOnQueryVersion
@@ -242,7 +241,7 @@ function queryDetail(work, versions) {
     $.ajax({
         url: '/detail',
         data: { version: versions },
-        success: function (datas) {
+        success: function(datas) {
             g_detail = JSON.parse(datas);
             console.log(g_detail);
             printResultTable(g_detail, work, versions);
@@ -253,12 +252,13 @@ function queryDetail(work, versions) {
 function init() {
     queryVersion();
     // queryHistory();
-    $('.version').on('click', 'li', function () {
+    $('.version').on('click', 'li', function() {
         $(this).toggleClass('selected');
     });
-    $('.ctrl').on('click', '.query', function (evt) {
+    $('.ctrl').on('click', '.query', function(evt) {
+        var version = $('.version input').val();
         var elems = $('.version li.selected');
-        if (!elems.length) {
+        if (!elems.length && !version) {
             showError('请至少选择一个版本.', '.version');
             return;
         }
@@ -271,6 +271,7 @@ function init() {
         for (var i = 0, len = elems.length; i < len; i++) {
             versions[i] = elems[i].innerText;
         }
+        if (version) versions.push(version);
         versions = versions.join(';');
         if (g_versions === versions) {
             if (g_detail) {

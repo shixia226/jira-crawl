@@ -1,0 +1,23 @@
+{
+  "name": "jira",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.16.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "dev": "node app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shixia226/jiraCrawl.git"
+  },
+  "author": "shixia226",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shixia226/jiraCrawl/issues"
+  },
+  "homepage": "https://github.com/shixia226/jiraCrawl#readme"
+}

@@ -5,5 +5,5 @@
     "startVersion": "Site V1.9.0",
     "versionUrl": "/jira/browse/CFW?${verify}#selectedTab=com.atlassian.jira.plugin.system.project:versions-panel&subset=-1",
     "detailUrl": "/jira/secure/IssueNavigator!executeAdvanced.jspa",
-    "query": "project=CFW AND assignee in (\"weizeng.shu\",\"ting.sun5\",\"hao.li3\",\"chunyan.wen\",\"zongqin.zhang\",\"hengshuai.hu\",\"zhuo.zhang3\",\"zhenmin.tian\",\"biao.wang\",\"hu.tang3\") AND resolution in (Fixed, Postponed, Unresolved) AND affectedVersion in (\"${version}\")"
+    "query": "project in (\"Chime CRM For Web\", \"Chime for Site\") AND assignee in (\"weizeng.shu\",\"ting.sun5\",\"hao.li3\",\"chunyan.wen\",\"zongqin.zhang\",\"hengshuai.hu\",\"zhuo.zhang3\",\"zhenmin.tian\",\"biao.wang\",\"hu.tang3\") AND resolution in (Fixed, Postponed, Unresolved) AND affectedVersion in (\"${version}\")"
 }
