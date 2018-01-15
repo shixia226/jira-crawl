@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>JIRA统计</title>
+    <style>
+        .jira-table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        .jira-table td {
+            border: 1px solid #999;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
+            padding: 3px 5px;
+            font-size: 12px;
+            background: #FFF;
+        }
+        
+        .jira-table .data .highlight {
+            color: red;
+        }
+        
+        .jira-table .data .blue {
+            color: blue;
+        }
+        
+        .jira-table .data .detail {
+            color: #777;
+            text-align: left;
+            white-space: nowrap;
+        }
+        
+        .jira-table .header td {
+            background: #DEDEDE;
+        }
+        
+        .jira-table .footer td {
+            background: #CCC;
+        }
+        
+        * {
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        
+        body {
+            padding-right: 200px;
+        }
+        
+        .result {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            border-left: 3px double #999;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .more {
+            font-size: 12px;
+            color: #999;
+            text-decoration: underline;
+            margin: 0 6px;
+            cursor: pointer;
+        }
+        
+        .ctrl {
+            margin-top: 50px;
+            padding: 10px 0;
+            border-top: 1px solid #CCC;
+            display: none;
+        }
+        
+        .btn {
+            background: #77b0fd;
+            padding: 3px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #FFF;
+            margin-left: 10px;
+            float: right;
+        }
+        
+        ul {
+            margin: 10px 0;
+            padding: 0;
+            border: 1px solid #CCC;
+        }
+        
+        li {
+            margin: 0;
+            padding: 3px 10px;
+            list-style: none
+        }
+        
+        li.selected {
+            color: #FFF;
+            background: #91befa;
+        }
+        
+        li:hover {
+            color: #FFF;
+            background: #77b0fd;
+        }
+        
+        .version input {
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid #CCC;
+        }
+        
+        .work textarea {
+            width: 100%;
+            height: 60px;
+            border: 1px solid #CCC;
+            resize: none;
+        }
+        
+        .error {
+            color: red;
+        }
+        
+        h3 {
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="result"></div>
+    <div class="panel">
+        <div class="version"></div>
+        <div class="work">
+            <label>工作量</label>
+            <textarea>;</textarea>
+        </div>
+        <div class="ctrl">
+            <span class="btn query">查询</span>
+            <span class="btn resolve">爬取</span>
+        </div>
+    </div>
+</body>
+<script src="../js/plugin/jquery.min.js"></script>
+<script src="./jira.js"></script>
+
+</html>

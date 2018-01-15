@@ -1,19 +1,8 @@
 var jiraConfig = require('./config-jira.json');
-var jiraType = require('./type-jira');
-
-var JIRA_TYPES = jiraType.JIRA_TYPES,
-    TYPE_UNKNOWN = jiraType.TYPE_UNKNOWN,
-    KEE_HELP = jiraType.KEE_HELP,
-    JIRA_ORIGIN = jiraType.JIRA_ORIGIN;
 
 function resolveJiraPage(datas, finish, jiras) {
     var data = datas.pop(),
-        assignee = data.assignee,
-        person = jiras[assignee];
-    if (!person) {
-        person = jiras[assignee] = { total: 0 };
-    }
-    person.total++;
+        assignee = data.assignee;
     var jiraPage = require('webpage').create(),
         url = data.url;
     jiraPage.onConsoleMessage = function(msg) {
@@ -31,8 +20,7 @@ function resolveJiraPage(datas, finish, jiras) {
                 }
                 return texts.join('***');
             }, jira);
-            (person.text = person.text || []).push(text);
-            (person.jira = person.jira || []).push(jira);
+            jiras.push([assignee, jira, text]);
             jiraPage.close();
             if (datas.length) {
                 resolveJiraPage(datas, finish, jiras);
@@ -40,17 +28,9 @@ function resolveJiraPage(datas, finish, jiras) {
                 finish(jiras);
             }
         } else {
-            finish('Error in resolve JIRA【' + jira + '】');
+            console.log('Error in resolve JIRA【' + jira + '】');
         }
     });
-}
-
-function mergeParam(param) {
-    var url = [];
-    for (var name in param) {
-        url.push(name + '=' + param[name]);
-    }
-    return url.join('&');
 }
 
 function resolveJiraListInPage(url, datas, callback) {
@@ -65,6 +45,7 @@ function resolveJiraListInPage(url, datas, callback) {
                 var info = listPage.evaluate(function() {
                     console.log('开始查询统计');
                     var datas = [];
+                    console.log(document.body.innerHTML)
                     var rows = document.querySelectorAll('#issuetable tbody tr');
                     for (var i = 0, len = rows.length; i < len; i++) {
                         var row = rows[i];
@@ -87,7 +68,11 @@ function resolveJiraListInPage(url, datas, callback) {
                 } else {
                     console.log('开始抓取详细信息...');
                     console.log('总共JIRA数：' + datas.length);
-                    resolveJiraPage(datas, callback, {});
+                    if (datas.length > 0) {
+                        resolveJiraPage(datas, callback, []);
+                    } else {
+                        callback([]);
+                    }
                 }
             } catch (e) {
                 callback('Error:' + e);
@@ -98,8 +83,16 @@ function resolveJiraListInPage(url, datas, callback) {
     })
 }
 
+function mergeParam(param) {
+    var url = [];
+    for (var name in param) {
+        url.push(name + '=' + param[name]);
+    }
+    return url.join('&');
+}
+
 function resolveJiraList(callback, condition) {
-    console.log('开始抓取...');
+    console.log('开始抓取JIRA列表...');
     condition = condition || {};
     var url = condition.url || (jiraConfig.url + jiraConfig.detailUrl),
         version = (condition.version || 'Site V1.9.0').split(';');
@@ -114,71 +107,10 @@ function resolveJiraList(callback, condition) {
     resolveJiraListInPage(url, [], callback);
 }
 
-function matchObject(arr, value, name) {
-    for (var i = 0, len = arr.length; i < len; i++) {
-        var obj = arr[i];
-        if (obj[name] === value) return obj;
-    }
-}
-
-function handleScore(person, jira, type, origin) {
-    var originInfo = person[origin.name];
-    if (!originInfo) originInfo = person[origin.name] = { total: 0, score: 0 };
-    var typeInfo = originInfo[type.name] = (originInfo[type.name] || { total: 0, score: 0, jira: [] }),
-        score = origin.score * type.score;
-    person.score = (person.score || 0) + score;
-    originInfo.total++;
-    originInfo.score += score;
-    typeInfo.total++;
-    typeInfo.score += score;
-    typeInfo.jira.push(jira);
-    return score;
-}
-
-function hanlePerson(name, person, jiras) {
-    var texts = person.text,
-        list = person.jira;
-    for (var i = 0, len = texts.length; i < len; i++) {
-        var reg = /@@([A-Z]):([A-Z])(:H)?@@/gm,
-            match = reg.exec(texts[i]),
-            jira = list[i];
-        if (!match) { //未按标准备注的，直接扣当前版本JIRA分数
-            handleScore(person, jira, TYPE_UNKNOWN, JIRA_ORIGIN[0]);
-        } else {
-            var nextMatch;
-            while ((nextMatch = reg.exec(texts[i]))) { //防止备注有多个，取最后一个
-                match = nextMatch;
-            }
-            var type = matchObject(JIRA_TYPES, match[1], 'kee');
-            var origin = matchObject(JIRA_ORIGIN, match[2], 'kee');
-            if (!type || !origin) { //备注错误的，按未备注处理
-                handleScore(person, jira, TYPE_UNKNOWN, JIRA_ORIGIN[0]);
-            } else {
-                var score = handleScore(person, jira, type, origin);
-                if (match[3]) { //协助他人进行解决的，可以加分（分数一半）
-                    var helper = texts[i].substr(0, match.index).match(/([^\*]+)\*{3}[^\*]*$/);
-                    if (helper) {
-                        var helpPerson = jiras[helper[1]];
-                        if (helpPerson) {
-                            helpPerson.score = (helpPerson.score || 0) + score / 2;
-                            var helpInfo = helpPerson[KEE_HELP];
-                            if (!helpInfo) helpInfo = helpPerson[KEE_HELP] = { score: 0, total: 0, jira: [], names: [] }
-                            helpInfo.score += Math.abs(score / 2);
-                            helpInfo.total++;
-                            helpInfo.jira.push(jira);
-                            helpInfo.names.push(name);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 module.exports = {
     version: function(callback, condition) {
-        condition = condition || {};
         console.log('爬取版本号...');
+        condition = condition || {};
         var url = condition.url || (jiraConfig.url + jiraConfig.versionUrl);
         var param = mergeParam({
             os_username: condition.username || jiraConfig.username,
@@ -186,9 +118,9 @@ module.exports = {
         });
         url = url.replace("${verify}", param);
         var versionPage = require('webpage').create();
-        // versionPage.onConsoleMessage = function(msg) {
-        //     console.log('PAGE CONSOLE: ' + msg);
-        // }
+        versionPage.onConsoleMessage = function(msg) {
+            console.log('版本页 => ' + msg);
+        }
         versionPage.open(url, function(status) {
             if (status === 'success') {
                 try {
@@ -220,21 +152,14 @@ module.exports = {
             phantom.exit();
         });
     },
-    detail: function(callback, condition) {
+    list: function(callback, condition) {
         resolveJiraList(function(jiras) {
-            if (Object.prototype.toString.call(jiras) === '[object String]') {
-                console.log(jiras);
-            } else {
-                try {
-                    for (var name in jiras) {
-                        hanlePerson(name, jiras[name], jiras);
-                    }
-                    if (callback) callback(jiras);
-                } catch (e) {
-                    console.log(e);
-                }
+            try {
+                if (callback) callback(jiras);
+            } catch (e) {
+                console.log(e);
             }
             phantom.exit();
         }, condition)
     }
-};
+}

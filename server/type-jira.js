@@ -1,5 +1,5 @@
 module.exports = {
-    JIRA_TYPES: [{
+    TYPES: [{
         name: '文案错误',
         desc: '包括单词拼写，大小写，标点符号后缺少空格，常见的文案格式（如钱币"$"，电话"-"，数值千分符","）遗漏等错误',
         kee: 'W',
@@ -40,14 +40,7 @@ module.exports = {
         kee: 'R',
         score: 1
     }],
-    TYPE_UNKNOWN: {
-        name: '未知类型',
-        desc: '未按标准进行备注',
-        kee: '?',
-        score: 10
-    },
-    KEE_HELP: '协助解决',
-    JIRA_ORIGIN: [{
+    REGIONS: [{
         name: '当前版本开发新增',
         kee: 'C',
         score: -1

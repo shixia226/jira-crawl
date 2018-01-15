@@ -3,12 +3,18 @@ var app = express();
 var fs = require("fs");
 
 var Url = require("url");
+var mgr = require("./server/manager");
 
 app.get('/config', function(req, res) {
-    var query = Url.parse(req.url, true).query;
+    res.end(JSON.stringify(require('./server/type-jira')));
 });
 
 app.get('/version', function(req, res) {
+    var query = Url.parse(req.url, true).query;
+    mgr.version(function(versions) {
+        res.end(JSON.stringify(versions));
+    }, query.resolved === 'true');
+    /*
     var phantom = require('child_process').spawn('phantomjs', ['./server/version-jira.js']);
 
     var output = [];
@@ -26,11 +32,23 @@ app.get('/version', function(req, res) {
         var data = output.join(''),
             idx = data.indexOf('===');
         res.end((idx === -1 ? data : data.substr(idx + 3)) || 'Error');
-    });
+    });*/
 });
+
+app.get('/resolve', function(req, res) {
+    var query = Url.parse(req.url, true).query;
+    mgr.resolve(query.version, query.query, function(data) {
+        res.end(JSON.stringify(data));
+    });
+})
 
 app.get('/detail', function(req, res) {
     var query = Url.parse(req.url, true).query;
+    mgr.read(query.version, function(data) {
+        res.end(JSON.stringify(data));
+    });
+
+    /*
     var phantom = require('child_process').spawn('phantomjs', ['./server/detail-jira.js', query.version || '', query.query || '']);
 
     var output = [];
@@ -49,6 +67,7 @@ app.get('/detail', function(req, res) {
             idx = data.indexOf('===');
         res.end((idx === -1 ? data : data.substr(idx + 3)) || 'Error');
     });
+    */
 })
 
 app.use(express.static("public"));
