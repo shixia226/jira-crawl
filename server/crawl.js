@@ -45,7 +45,6 @@ function resolveJiraListInPage(url, datas, callback) {
                 var info = listPage.evaluate(function() {
                     console.log('开始查询统计');
                     var datas = [];
-                    console.log(document.body.innerHTML)
                     var rows = document.querySelectorAll('#issuetable tbody tr');
                     for (var i = 0, len = rows.length; i < len; i++) {
                         var row = rows[i];

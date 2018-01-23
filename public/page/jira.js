@@ -41,6 +41,7 @@ function queryUnresolvedVersion() {
             }
             html.push('</ul><label>未罗列版本：</label><input>');
             $('.version').append(html.join('')).find('.more').remove();
+            $('.ctrl .resolve').show();
         }
     });
 }
